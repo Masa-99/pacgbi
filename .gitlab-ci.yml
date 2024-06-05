@@ -1,0 +1,143 @@
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: never
+    - if: $CI_COMMIT_REF_NAME =~ /^bot\//
+
+stages:
+  - retrieve-issue
+  - request-code
+  - build
+  - commit-changes
+  - merge-request
+
+.prepare_step:
+  before_script:
+    - apt-get update -qq
+    - apt-get install -y jq
+
+retrieve-issue-job:
+  stage: retrieve-issue
+  extends:
+    - .prepare_step
+  script:
+    - echo "Getting issue ID..."
+    - ISSUE_ID=$(echo "$CI_COMMIT_REF_NAME" | tr -cd '[:digit:]')
+    - echo "Issue ID is $ISSUE_ID"
+    - echo "ISSUE_ID=$ISSUE_ID" >> .pipeline-env
+    - url="https://gitlab.com/api/v4/projects/$CI_PROJECT_ID/issues/$ISSUE_ID"
+    - echo $url
+    - >
+      ISSUE=$(curl -s -H "PRIVATE-TOKEN: $GITLAB_ACCESS_TOKEN" $url)
+    - echo $ISSUE
+    - echo "ISSUE_LABEL=$(echo "$ISSUE" | jq -r '.labels[0]')" >> .pipeline-env
+    - echo "$ISSUE" | jq -r '.description' > issue-description.txt
+    - echo "GitLab issue retrieved and saved to issue-description.txt."
+  artifacts:
+    paths:
+      - issue-description.txt
+    reports:
+      dotenv: .pipeline-env
+
+request-code-job:
+  stage: request-code
+  extends:
+    - .prepare_step
+  script:
+    - echo "Requesting code from OpenAI"
+    - issue_description=$(<issue-description.txt)
+    - component_path=$(find -name $ISSUE_LABEL.tsx) >> .pipeline-env
+    - context_code=$(<$component_path)
+    - package_json_path=$(find -name package.json)
+    - package_json=$(<$package_json_path)
+    - dependencies=$(echo "$package_json" | jq -r '.dependencies')
+    - devDependencies=$(echo "$package_json" | jq -r '.devDependencies')
+    - >
+      allDependencies=$(jq -n \
+        --arg dependencies "$dependencies" \
+        --arg devDependencies "$devDependencies" \
+      '{
+        dependencies: $dependencies,
+        devDependencies: $devDependencies
+      }')
+    - >
+      data=$(jq -n \
+        --arg model "$OPENAI_MODEL" \
+        --arg system_message "$OPENAI_SYSTEM_MESSAGE" \
+        --arg issue_description "$issue_description" \
+        --arg minified_package "$allDependencies" \
+        --arg issue_label "$ISSUE_LABEL" \
+        --arg context_code "$context_code" \
+        '{
+          model: $model,
+          messages: [
+            {role: "system", content: $system_message},
+            {role: "user", content: $issue_description},
+            {role: "user", content: ("The dependencies listed in the package.json of this application are: \($minified_package)")},
+            {role: "user", content: ("The code of \($issue_label) component is ```tsx \($context_code)```")}
+          ],
+          temperature: 0
+        }')
+    - url=https://api.openai.com/v1/chat/completions
+    - >
+      response=$(curl -s -H "Content-Type: application/json" -H "Authorization: Bearer $OPENAI_API_KEY" -d "$data" $url)
+    - echo "The assistant response is $response"
+    - echo "$response" | jq -r '.choices[0].message.content' | perl -0777 -ne 'print $1 if /```tsx\s(.*?)\s*```/s' > $component_path
+    - cat $component_path
+  artifacts:
+    paths:
+      - src
+    reports:
+      dotenv: .pipeline-env
+
+build-job:
+  stage: build
+  image: node:18-alpine
+  before_script:
+    - apk update && apk add git 
+  script:
+    - echo "Compiling the code..."
+    - git status
+    - yarn install
+    - npx prettier --write src
+    - yarn vite build
+    - echo "Compiling complete."
+
+commit-changes-job:
+  stage: commit-changes
+  variables:
+    author_email: "genai@bot.com"
+    author_name: "GenAI Bot"
+  before_script:
+    - apt-get install -y -qq git 
+  script:
+    - echo "Remove unnecceary files"
+    - rm issue-description.txt
+    - echo "Commit changes..."
+    - git config user.email $author_email
+    - git config user.name $author_name
+    - git status
+    - git commit -am "Update $ISSUE_LABEL.tsx"
+    - git push "https://project_access_token:$GITLAB_ACCESS_TOKEN@$CI_SERVER_HOST/$CI_PROJECT_PATH.git" HEAD:$CI_COMMIT_BRANCH -o ci.skip
+    - echo "File successfully updated."
+
+merge-request-job:
+  stage: merge-request
+  extends:
+    - .prepare_step
+  script:
+    - echo "Creating merge request..."
+    - url="https://gitlab.com/api/v4/projects/$CI_PROJECT_ID/merge_requests"
+    - >
+      data=$(jq -n \
+        --arg source_branch "$CI_COMMIT_REF_NAME" \
+        --arg target_branch "main" \
+        --arg issue_id "$ISSUE_ID" \
+        '{
+          source_branch: $source_branch,
+          target_branch: $target_branch,
+          title: "Implementation of \($issue_id)"
+        }')
+    - >
+      curl -s --request POST --header "PRIVATE-TOKEN: $GITLAB_ACCESS_TOKEN" --header "Content-Type: application/json" -d "$data" $url
+    - echo "Merge request created."
