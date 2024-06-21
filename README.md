@@ -38,7 +38,7 @@ Now, everything is set up for usage.
 ## Usage:
 
 1. Open the GitLab Issue that you want to be implemented by the PACGBI.
-2. Configure which code file needs to be modified by the PACGBI to solve the Issue by setting an Issue label with the code file name (without file extension, only .ts files are currently supported).
+2. Set an Issue label with the name of the code file which needs to be modified by the PACGBI to solve the Issue (without file extension, only .tsx files are currently supported).
 > **_NOTE:_** Currently, the PACGBI only supports modifying Issues with **one** file aka one label.
 4. Make sure the Issue description is **clear** and **detailed**. In our paper, which is based software development in a Scrum team, we used this template:
 
