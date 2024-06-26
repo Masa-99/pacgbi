@@ -57,6 +57,10 @@ Now, everything is set up for usage.
 
 We researched the capabilities of the PACGBI and LLM-based code generation in a case study on React front end development in our research paper: "Potentials and Limitations of LLM-based CI/CD pipelines". There you can gain more insights about its impact on code quality, costs and acceptance rate.
 
+Further, we wrote a tool demonstration paper: "PACGBI: Pipeline for Automated Code Generation from Backlog Items".
+
+A demonstration of the tool including a screencast is available on [Youtube](https://youtu.be/TI53m-fIoyc).
+
 ## License
 
 MIT
