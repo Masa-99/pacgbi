@@ -63,4 +63,4 @@ A demonstration of the tool including a screencast is available on [Youtube](htt
 
 ## License
 
-MIT
+GNU GPLv3
