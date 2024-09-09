@@ -35,7 +35,7 @@ In our work, the system message was:
 
 Now, everything is set up for usage.
 
-## Usage:
+## Usage
 
 1. Open the GitLab Issue that you want to be implemented by the PACGBI.
 2. Set an Issue label with the name of the code file which needs to be modified by the PACGBI to solve the Issue (without file extension, only .tsx files are currently supported).
@@ -53,13 +53,17 @@ Now, everything is set up for usage.
 6. You can observe the pipeline process in **Build > Pipelines**. If the pipeline runs through all stages successfully, you can find the merge request with the LLM-generated code in **Code > Merge requests**.
 > **CAUTION:** The generated merge request should always be reviewed by developers before merging into the main code base to avoid unexpected and unintentional changes!
 
-## Paper
+## Papers
 
 We researched the capabilities of the PACGBI and LLM-based code generation in a case study on React front end development in our research paper: "Potentials and Limitations of LLM-based CI/CD pipelines". There you can gain more insights about its impact on code quality, costs and acceptance rate.
 
-Further, we wrote a tool demonstration paper: "PACGBI: Pipeline for Automated Code Generation from Backlog Items".
+Further, we wrote a tool demonstration paper: "PACGBI: Pipeline for Automated Code Generation from Backlog Items", which has been accepted at the Tool Demonstration Track of the ASE'24.
 
 A demonstration of the tool including a screencast is available on [Youtube](https://youtu.be/TI53m-fIoyc).
+
+## Case Study
+
+To test out the PACGBI quickly, use the ressource from our case study. Instruction are described [here](case-study/case-study-instructions.md).
 
 ## License
 
