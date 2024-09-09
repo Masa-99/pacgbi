@@ -3,7 +3,7 @@
 If you want to try out the pipeline you can follow these steps to reproduce the case study that was performed for research.
 
 1. Fork the [cypress-realworld-app](https://github.com/cypress-io/cypress-realworld-app) repository and transfer it into your GitLab account.
-2. Create an GitLab Issue for each backlog item in the [Product Backlog](case-study/Product%Backlog.pdf) based on this structure:
+2. Create an GitLab Issue for each backlog item in the [Product Backlog](case-study/Product_Backlog.pdf) based on this structure:
    
 | GitLab Issue   | Product Backlog Item            |
 |----------------|---------------------------------|
